@@ -1,0 +1,9 @@
+{
+  "name": "Sunday Circle",
+  "short_name": "Circle",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f4efe6",
+  "theme_color": "#2c4338",
+  "description": "This week’s Sunday school lesson and class thoughts."
+}

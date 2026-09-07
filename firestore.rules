@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /meta/{doc} {
+      allow read: if true;
+      allow write: if true;
+    }
+    match /thoughts/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.author is string
+                    && request.resource.data.author.size() >= 2
+                    && request.resource.data.author.size() <= 40
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() >= 3
+                    && request.resource.data.text.size() <= 600;
+      allow delete: if true;
+      allow update: if false;
+    }
+  }
+}

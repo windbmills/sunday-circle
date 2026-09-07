@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#2c4338" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Sunday Circle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Source+Sans+3:wght@400;600;650;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.json" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="app-header">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M12 4.5c-2.2 2.2-6 3-6 7.2 0 3.2 2.5 5.8 6 7.3 3.5-1.5 6-4.1 6-7.3 0-4.2-3.8-5-6-7.2Z" stroke="#f4efe6" stroke-width="1.6"/>
+            <circle cx="9.2" cy="11.2" r="1" fill="#f4efe6"/>
+            <circle cx="12" cy="10.2" r="1" fill="#f4efe6"/>
+            <circle cx="14.8" cy="11.2" r="1" fill="#f4efe6"/>
+          </svg>
+        </div>
+        <div>
+          <h1 id="className">Sunday Circle</h1>
+          <p id="tagline">Ward notes first. Then this week’s lesson.</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="navCover" type="button">Bulletin</button>
+        <button class="icon-btn" id="navLesson" type="button">Lesson</button>
+        <button class="icon-btn teacher-launch" id="openTeacher" type="button">Admin</button>
+        <button class="icon-btn" id="openLogin" type="button">Teacher sign in</button>
+      </div>
+    </header>
+
+    <div class="mode-pill" id="modePill">Checking how notes are saved…</div>
+
+    <!-- COVER / BULLETIN -->
+    <section id="view-cover">
+      <article class="topic-card cover-hero">
+        <div class="week-label" id="coverWeek">This week</div>
+        <h2 id="coverGreeting">Welcome</h2>
+        <p class="lead" id="coverWelcome"></p>
+      </article>
+
+      <section class="bulletin-block">
+        <h3>Happening in the ward</h3>
+        <ul class="event-list" id="happenings"></ul>
+      </section>
+
+      <section class="bulletin-block">
+        <h3>Family needs</h3>
+        <ul class="need-list" id="needs"></ul>
+      </section>
+
+      <section class="bulletin-block">
+        <h3>Birthdays &amp; dates</h3>
+        <ul class="bday-list" id="birthdays"></ul>
+      </section>
+
+      <section class="bulletin-block thanks-block" id="thanksBlock">
+        <h3>Thanks</h3>
+        <div id="thanks"></div>
+      </section>
+    </section>
+
+    <!-- LESSON -->
+    <section id="view-lesson" hidden>
+      <article class="topic-card" id="topicCard">
+        <div class="week-label" id="weekLabel">This week</div>
+        <h2 id="topicTitle">Loading lesson…</h2>
+        <div class="scripture" id="scriptureBlock">
+          <blockquote id="scriptureText"></blockquote>
+          <cite id="scriptureRef"></cite>
+        </div>
+        <div class="topic-body" id="topicBody"></div>
+        <div class="video-block" id="videoBlock" hidden>
+          <h3 id="videoLabel">This week’s talk</h3>
+          <div class="video-frame" id="videoFrame"></div>
+          <p class="video-fallback" id="videoFallback" hidden></p>
+        </div>
+        <ul class="questions" id="questions"></ul>
+      </article>
+
+      <div class="section-head">
+        <h3>Class thoughts</h3>
+        <span id="thoughtCount">0 shared</span>
+      </div>
+      <div class="thoughts" id="thoughts"></div>
+    </section>
+  </div>
+
+  <div class="fab-bar" id="fabBar">
+    <button class="fab" id="primaryCta" type="button">Open this week’s lesson</button>
+  </div>
+
+  <div class="overlay" id="shareOverlay">
+    <div class="sheet" role="dialog">
+      <h3>Share a thought</h3>
+      <p class="hint" id="shareHint">Students do not need an account. Add your name and a thought anytime this week.</p>
+      <label for="author">Your name</label>
+      <input id="author" maxlength="40" autocomplete="name" placeholder="First name is fine" />
+      <label for="thoughtText">Your thought</label>
+      <textarea id="thoughtText" maxlength="600" placeholder="What stayed with you from this week’s lesson?"></textarea>
+      <div class="row-actions">
+        <button class="btn ghost" type="button" id="cancelShare">Cancel</button>
+        <button class="btn primary" type="button" id="submitShare">Post</button>
+      </div>
+      <div class="status" id="shareStatus"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="loginOverlay">
+    <div class="sheet" role="dialog">
+      <h3>Sign in</h3>
+      <p class="hint">For teachers and the secretary only. Students skip this and just share a thought.</p>
+      <label for="loginUser">Username</label>
+      <input id="loginUser" autocomplete="username" placeholder="your name" />
+      <label for="loginPass">Password</label>
+      <input id="loginPass" type="password" autocomplete="current-password" />
+      <div class="row-actions">
+        <button class="btn ghost" type="button" id="cancelLogin">Cancel</button>
+        <button class="btn primary" type="button" id="submitLogin">Sign in</button>
+      </div>
+      <div class="status" id="loginStatus"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="pinOverlay">
+    <div class="sheet" role="dialog">
+      <h3>Admin</h3>
+      <p class="hint">Secretary sign-in, or the starter PIN from config.js.</p>
+      <label for="pinInput">PIN</label>
+      <input id="pinInput" type="password" inputmode="numeric" maxlength="12" />
+      <div class="row-actions">
+        <button class="btn ghost" type="button" id="cancelPin">Cancel</button>
+        <button class="btn primary" type="button" id="submitPin">Open</button>
+      </div>
+      <div class="status" id="pinStatus"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="adminOverlay">
+    <div class="sheet admin-sheet" role="dialog">
+      <h3>Admin</h3>
+      <p class="hint">Update the cover bulletin and the lesson. Publish each when it is ready.</p>
+      <div class="admin-tabs">
+        <button type="button" class="on" data-tab="cover">Cover</button>
+        <button type="button" data-tab="topic">Lesson</button>
+        <button type="button" data-tab="people">People</button>
+        <button type="button" data-tab="qr">QR &amp; link</button>
+        <button type="button" data-tab="mod">Thoughts</button>
+      </div>
+
+      <div class="panel on" id="panel-cover">
+        <label for="cWeek">Week label</label>
+        <input id="cWeek" placeholder="Week of September 13, 2026" />
+        <label for="cGreeting">Cover headline</label>
+        <input id="cGreeting" placeholder="Welcome to the family" />
+        <label for="cWelcome">Welcome note</label>
+        <textarea id="cWelcome" placeholder="A short greeting for the cover"></textarea>
+        <label for="cHappenings">Happening in the ward (one per line: time | event)</label>
+        <textarea id="cHappenings" placeholder="Sun 9:00 a.m. | Sacrament meeting"></textarea>
+        <label for="cNeeds">Family needs (one per line)</label>
+        <textarea id="cNeeds" placeholder="Meals for a family this week"></textarea>
+        <label for="cBirthdays">Birthdays &amp; dates (one per line: when | name)</label>
+        <textarea id="cBirthdays" placeholder="Mon 14 | Claire"></textarea>
+        <label for="cThanks">Thanks</label>
+        <textarea id="cThanks" placeholder="Thank you to…"></textarea>
+        <div class="row-actions">
+          <button class="btn ghost" type="button" id="closeAdmin">Close</button>
+          <button class="btn primary" type="button" id="publishCover">Publish cover</button>
+        </div>
+        <div class="status" id="coverStatus"></div>
+      </div>
+
+      <div class="panel" id="panel-topic">
+        <label for="fWeek">Week label</label>
+        <input id="fWeek" placeholder="September 14–20, 2026" />
+        <label for="fTitle">Title</label>
+        <input id="fTitle" placeholder="The lesson title" />
+        <label for="fRef">Scripture reference</label>
+        <input id="fRef" placeholder="Proverbs 3:5–6" />
+        <label for="fScripture">Scripture text</label>
+        <textarea id="fScripture" placeholder="Paste the verse or short passage"></textarea>
+        <label for="fBody">What to sit with this week</label>
+        <textarea id="fBody" placeholder="A short note from you to the class"></textarea>
+        <label for="fVideo">Talk video link (YouTube, Vimeo, or any URL)</label>
+        <input id="fVideo" placeholder="https://www.youtube.com/watch?v=…" />
+        <label for="fVideoLabel">Video title</label>
+        <input id="fVideoLabel" placeholder="This week’s talk" />
+        <label for="fQuestions">Discussion questions (one per line)</label>
+        <textarea id="fQuestions" placeholder="Question one&#10;Question two"></textarea>
+        <div class="row-actions">
+          <button class="btn ghost" type="button" id="closeAdmin2">Close</button>
+          <button class="btn primary" type="button" id="publishTopic">Publish lesson</button>
+        </div>
+        <div class="status" id="topicStatus"></div>
+      </div>
+
+      <div class="panel" id="panel-people">
+        <p class="hint">Add a teacher or student. They sign in with the username and password you set. Change starter passwords.</p>
+        <label for="pName">Display name</label>
+        <input id="pName" placeholder="Sister Jensen" />
+        <label for="pUser">Username</label>
+        <input id="pUser" placeholder="jensen" />
+        <label for="pPass">Password</label>
+        <input id="pPass" placeholder="temporary password" />
+        <label for="pRole">Role</label>
+        <select id="pRole">
+          <option value="student">Student</option>
+          <option value="teacher">Teacher</option>
+          <option value="secretary">Secretary</option>
+        </select>
+        <div class="row-actions">
+          <button class="btn primary" type="button" id="addPerson">Add person</button>
+        </div>
+        <div class="status" id="peopleStatus"></div>
+        <div id="peopleList"></div>
+      </div>
+
+      <div class="panel" id="panel-qr">
+        <p class="hint">Share this QR. People land on the bulletin first, then tap through to the lesson.</p>
+        <div class="qr-box">
+          <div id="qrcode"></div>
+          <strong id="qrCaption">Sunday Circle</strong>
+        </div>
+        <label>Share link</label>
+        <div class="link-row">
+          <input id="shareLink" readonly />
+          <button class="btn primary" type="button" id="copyLink" style="flex:0 0 auto">Copy</button>
+        </div>
+        <div class="row-actions">
+          <button class="btn ghost" type="button" id="printQr">Print QR card</button>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-mod">
+        <p class="hint">Remove a thought if it does not belong in class.</p>
+        <div id="modList"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
