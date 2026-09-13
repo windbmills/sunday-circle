@@ -26,6 +26,8 @@ YouTube and Vimeo play on the page. Gospel Library or Drive links become “Open
 
 ## Hosting
 
-Drag the folder onto https://app.netlify.com/drop then add Firebase so every phone shares one board.
+Hosted via GitHub → Netlify. Firebase project `sunday-circle-65c06` (windmills34@gmail.com) so every phone shares one board.
+
+Repo: https://github.com/windbmills/sunday-circle
 
 Do not reuse Member Tools passwords.

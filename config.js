@@ -55,11 +55,11 @@ window.SUNDAY_CIRCLE = {
   },
 
   firebase: {
-    apiKey: "",
-    authDomain: "",
-    projectId: "",
-    storageBucket: "",
-    messagingSenderId: "",
-    appId: "",
+    apiKey: "AIzaSyDEme2ECnQVee1A3pVvyCNNLXst9_zVKGE",
+    authDomain: "sunday-circle-65c06.firebaseapp.com",
+    projectId: "sunday-circle-65c06",
+    storageBucket: "sunday-circle-65c06.firebasestorage.app",
+    messagingSenderId: "846762128446",
+    appId: "1:846762128446:web:7102290f3667d8aacecd6f",
   },
 };
