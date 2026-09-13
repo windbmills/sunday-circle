@@ -179,6 +179,17 @@
           })
           .join("")
       : '<li class="empty-line">Nothing posted yet.</li>';
+    const interviews = c.interviews || [];
+    $("interviews").innerHTML = interviews.length
+      ? interviews
+          .map((iv) => {
+            const who = String(iv.who || iv.when || "").trim();
+            const leader = String(iv.leader || iv.what || "").trim();
+            return `<li><span class="when">${escapeHtml(who)}</span><span class="what">${escapeHtml(leader)}</span></li>`;
+          })
+          .join("")
+      : "";
+    $("interviewsBlock").style.display = interviews.length ? "" : "none";
     const needs = c.needs || [];
     $("needs").innerHTML = needs.length
       ? needs.map((n) => `<li>${escapeHtml(typeof n === "string" ? n : n.what || "")}</li>`).join("")
@@ -200,6 +211,14 @@
     $("cGreeting").value = c.greeting || "";
     $("cWelcome").value = c.welcome || "";
     $("cHappenings").value = pairsToText(c.happenings, "when", "what");
+    $("cInterviews").value = (c.interviews || [])
+      .map((iv) => {
+        const who = iv.who || iv.when || "";
+        const leader = iv.leader || iv.what || "";
+        return who && leader ? `${who} | ${leader}` : who || leader;
+      })
+      .filter(Boolean)
+      .join("\n");
     $("cNeeds").value = (c.needs || []).map((n) => (typeof n === "string" ? n : n.what || "")).join("\n");
     $("cBirthdays").value = pairsToText(c.birthdays, "when", "who");
     $("cThanks").value = c.thanks || "";
@@ -313,6 +332,10 @@
       greeting: $("cGreeting").value.trim(),
       welcome: $("cWelcome").value.trim(),
       happenings: parsePairs($("cHappenings").value).map((r) => ({ when: r.when, what: r.what })),
+      interviews: parsePairs($("cInterviews").value).map((r) => ({
+        who: r.when || r.who || r.what,
+        leader: r.what || r.who || "",
+      })).filter((r) => r.who || r.leader),
       needs: $("cNeeds")
         .value.split("\n")
         .map((s) => s.trim())

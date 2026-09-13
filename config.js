@@ -18,6 +18,7 @@ window.SUNDAY_CIRCLE = {
       { when: "Sun", what: "Sacrament meeting" },
       { when: "Sun · after Sunday School", what: "Elders Quorum — “Come Home,” Clark G. Gilbert" },
     ],
+    interviews: [],
     needs: [
       "Share ministering needs with the presidency (only what is okay to post publicly).",
     ],
