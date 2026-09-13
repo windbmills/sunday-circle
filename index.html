@@ -33,7 +33,7 @@
         <button class="icon-btn" id="navCover" type="button">Bulletin</button>
         <button class="icon-btn" id="navLesson" type="button">Lesson</button>
         <button class="icon-btn teacher-launch" id="openTeacher" type="button">Admin</button>
-        <button class="icon-btn" id="openLogin" type="button">Teacher sign in</button>
+        <button class="icon-btn" id="openLogin" type="button">Editor sign in</button>
       </div>
     </header>
 
@@ -116,31 +116,21 @@
 
   <div class="overlay" id="loginOverlay">
     <div class="sheet" role="dialog">
-      <h3>Sign in</h3>
-      <p class="hint">For teachers and the secretary only. Students skip this and just share a thought.</p>
-      <label for="loginUser">Username</label>
-      <input id="loginUser" autocomplete="username" placeholder="your name" />
+      <h3>Editor sign in</h3>
+      <p class="hint">For the secretary and approved teachers. Quorum members skip this and just share a thought.</p>
+      <label for="loginEmail">Email</label>
+      <input id="loginEmail" type="email" autocomplete="username" placeholder="you@email.com" />
       <label for="loginPass">Password</label>
       <input id="loginPass" type="password" autocomplete="current-password" />
       <div class="row-actions">
         <button class="btn ghost" type="button" id="cancelLogin">Cancel</button>
         <button class="btn primary" type="button" id="submitLogin">Sign in</button>
       </div>
-      <div class="status" id="loginStatus"></div>
-    </div>
-  </div>
-
-  <div class="overlay" id="pinOverlay">
-    <div class="sheet" role="dialog">
-      <h3>Admin</h3>
-      <p class="hint">Secretary sign-in, or the starter PIN from config.js.</p>
-      <label for="pinInput">PIN</label>
-      <input id="pinInput" type="password" inputmode="numeric" maxlength="12" />
       <div class="row-actions">
-        <button class="btn ghost" type="button" id="cancelPin">Cancel</button>
-        <button class="btn primary" type="button" id="submitPin">Open</button>
+        <button class="btn ghost" type="button" id="createAccount">Create account</button>
+        <button class="btn ghost" type="button" id="resetPassword">Reset password</button>
       </div>
-      <div class="status" id="pinStatus"></div>
+      <div class="status" id="loginStatus"></div>
     </div>
   </div>
 
@@ -151,7 +141,7 @@
       <div class="admin-tabs">
         <button type="button" class="on" data-tab="cover">Cover</button>
         <button type="button" data-tab="topic">Lesson</button>
-        <button type="button" data-tab="people">People</button>
+        <button type="button" data-tab="people">Editors</button>
         <button type="button" data-tab="qr">QR &amp; link</button>
         <button type="button" data-tab="mod">Thoughts</button>
       </div>
@@ -203,21 +193,13 @@
       </div>
 
       <div class="panel" id="panel-people">
-        <p class="hint">Add a teacher or student. They sign in with the username and password you set. Change starter passwords.</p>
+        <p class="hint">Approve a teacher email. They create their own Firebase account with that email, then sign in. Only the owner can add or remove editors.</p>
         <label for="pName">Display name</label>
-        <input id="pName" placeholder="Sister Jensen" />
-        <label for="pUser">Username</label>
-        <input id="pUser" placeholder="jensen" />
-        <label for="pPass">Password</label>
-        <input id="pPass" placeholder="temporary password" />
-        <label for="pRole">Role</label>
-        <select id="pRole">
-          <option value="student">Student</option>
-          <option value="teacher">Teacher</option>
-          <option value="secretary">Secretary</option>
-        </select>
+        <input id="pName" placeholder="Brother Jensen" />
+        <label for="pEmail">Email</label>
+        <input id="pEmail" type="email" placeholder="teacher@email.com" />
         <div class="row-actions">
-          <button class="btn primary" type="button" id="addPerson">Add person</button>
+          <button class="btn primary" type="button" id="addPerson">Approve editor</button>
         </div>
         <div class="status" id="peopleStatus"></div>
         <div id="peopleList"></div>
@@ -250,6 +232,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
   <script src="config.js"></script>
   <script src="app.js"></script>

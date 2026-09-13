@@ -3,19 +3,18 @@
   const LS_TOPIC = "sc_topic";
   const LS_COVER = "sc_cover";
   const LS_THOUGHTS = "sc_thoughts";
-  const LS_USERS = "sc_users";
-  const LS_SESSION = "sc_session";
-  const LS_UNLOCK = "sc_teacher";
+  const OWNER_EMAIL = String(cfg.ownerEmail || "windmills34@gmail.com").toLowerCase();
 
   const $ = (id) => document.getElementById(id);
 
   let db = null;
+  let auth = null;
   let live = false;
   let topic = null;
   let cover = null;
   let thoughts = [];
-  let users = [];
-  let session = null;
+  let editors = [];
+  let authUser = null;
   let view = "cover";
 
   function firebaseReady() {
@@ -70,36 +69,45 @@
       });
   }
 
-  function roleLabel(role) {
-    if (role === "secretary") return "Secretary";
-    if (role === "teacher") return "Teacher";
-    return "Class";
+  function authEmail() {
+    return authUser && authUser.email ? String(authUser.email).toLowerCase() : "";
   }
 
-  function allUsers() {
-    const extras = users && users.length ? users : [];
-    const starters = cfg.users || [];
-    const map = new Map();
-    starters.concat(extras).forEach((u) => {
-      if (u && u.username) map.set(String(u.username).toLowerCase(), u);
-    });
-    return Array.from(map.values());
+  function isAnonymous() {
+    return Boolean(authUser && authUser.isAnonymous);
   }
 
-  function currentSession() {
-    if (session) return session;
-    session = readLocal(LS_SESSION, null);
-    return session;
+  function isOwner() {
+    return Boolean(authUser && !authUser.isAnonymous && authEmail() === OWNER_EMAIL);
   }
 
-  function isSecretary() {
-    const s = currentSession();
-    return Boolean(s && s.role === "secretary") || sessionStorage.getItem(LS_UNLOCK) === "1";
+  function isEditor() {
+    if (isOwner()) return true;
+    if (!authUser || authUser.isAnonymous || !authEmail()) return false;
+    if (!authUser.emailVerified) return false;
+    return editors.some((e) => e.email === authEmail());
   }
 
   function canPrepareLesson() {
-    const s = currentSession();
-    return isSecretary() || Boolean(s && s.role === "teacher");
+    return isEditor();
+  }
+
+  function roleLabel(role) {
+    if (role === "secretary" || role === "owner") return "Secretary";
+    if (role === "teacher" || role === "editor") return "Teacher";
+    return "Class";
+  }
+
+  function currentRole() {
+    if (isOwner()) return "secretary";
+    if (isEditor()) return "teacher";
+    return "student";
+  }
+
+  function displayName() {
+    if (!authUser || authUser.isAnonymous) return "";
+    const match = editors.find((e) => e.email === authEmail());
+    return (match && match.name) || authUser.displayName || authEmail();
   }
 
   function embedInfo(url) {
@@ -287,6 +295,10 @@
   }
 
   async function publishCover() {
+    if (!canPrepareLesson()) {
+      $("coverStatus").textContent = "Sign in as an approved editor to publish.";
+      return;
+    }
     const next = {
       weekLabel: $("cWeek").value.trim(),
       greeting: $("cGreeting").value.trim(),
@@ -324,6 +336,10 @@
   }
 
   async function publishTopic() {
+    if (!canPrepareLesson()) {
+      $("topicStatus").textContent = "Sign in as an approved editor to publish.";
+      return;
+    }
     const next = {
       weekLabel: $("fWeek").value.trim(),
       title: $("fTitle").value.trim(),
@@ -362,122 +378,168 @@
   }
 
   function renderSession() {
-    const s = currentSession();
     const btn = $("openLogin");
-    if (s) {
-      btn.textContent = s.name || s.username;
-      $("shareHint").textContent = "Posting as " + (s.name || s.username) + " (" + roleLabel(s.role) + ").";
-      $("author").value = s.name || s.username;
+    if (authUser && !isAnonymous()) {
+      btn.textContent = isEditor() ? "Sign out" : authEmail();
+      $("shareHint").textContent = "Posting as " + (displayName() || authEmail()) + " (" + roleLabel(currentRole()) + ").";
+      $("author").value = displayName() || authEmail();
     } else {
-      btn.textContent = "Teacher sign in";
-      $("shareHint").textContent = "Students do not need an account. Add your name and a thought anytime this week.";
+      btn.textContent = "Editor sign in";
+      $("shareHint").textContent = "Quorum members do not need an account. Add your name and a thought anytime this week.";
     }
-    $("openTeacher").style.display = canPrepareLesson() || !s ? "" : "none";
-    document.querySelectorAll('.admin-tabs button[data-tab="cover"], .admin-tabs button[data-tab="people"]').forEach((el) => {
-      el.style.display = isSecretary() ? "" : "none";
+    $("openTeacher").style.display = "";
+    document.querySelectorAll('.admin-tabs button[data-tab="people"]').forEach((el) => {
+      el.style.display = isOwner() ? "" : "none";
     });
   }
 
   function renderPeople() {
     const list = $("peopleList");
-    const rows = allUsers();
-    if (!rows.length) {
-      list.innerHTML = '<p class="hint">No people yet.</p>';
+    if (!editors.length) {
+      list.innerHTML = '<p class="hint">No approved editors yet. Add a teacher email.</p>';
       return;
     }
-    list.innerHTML = rows
+    list.innerHTML = editors
       .map(
         (u) =>
-          `<div class="mod-item"><strong>${escapeHtml(u.name || u.username)}</strong>
-          <span style="color:var(--ink-soft);font-size:.8rem"> · ${escapeHtml(u.username)} · ${escapeHtml(roleLabel(u.role))}</span>
-          <button class="btn danger" type="button" data-un="${escapeHtml(u.username)}">Remove</button></div>`
+          `<div class="mod-item"><strong>${escapeHtml(u.name || u.email)}</strong>
+          <span style="color:var(--ink-soft);font-size:.8rem"> · ${escapeHtml(u.email)}</span>
+          <button class="btn danger" type="button" data-un="${escapeHtml(u.email)}">Remove</button></div>`
       )
       .join("");
   }
 
-  function signIn() {
-    const username = $("loginUser").value.trim();
-    const password = $("loginPass").value;
-    const found = allUsers().find(
-      (u) => String(u.username).toLowerCase() === username.toLowerCase() && String(u.password) === password
-    );
-    if (!found) {
-      $("loginStatus").textContent = "That username or password does not match.";
-      return;
-    }
-    session = { username: found.username, name: found.name || found.username, role: found.role };
-    localStorage.setItem(LS_SESSION, JSON.stringify(session));
-    if (found.role === "secretary") sessionStorage.setItem(LS_UNLOCK, "1");
-    $("loginPass").value = "";
-    $("loginStatus").textContent = "";
-    closeOverlay("loginOverlay");
-    renderSession();
-    toast("Signed in as " + session.name);
-    if (found.role === "secretary" || found.role === "teacher") {
-      openOverlay("adminOverlay");
-      document.querySelectorAll(".admin-tabs button").forEach((b) => b.classList.remove("on"));
-      document.querySelectorAll(".panel").forEach((p) => p.classList.remove("on"));
-      const tab = found.role === "teacher" ? "topic" : "cover";
-      const btn = document.querySelector('.admin-tabs button[data-tab="' + tab + '"]');
-      if (btn) btn.classList.add("on");
-      const panel = $("panel-" + tab);
-      if (panel) panel.classList.add("on");
-      paintQr();
-    } else setView("lesson");
+  function authError(err) {
+    const code = err && err.code;
+    if (code === "auth/invalid-email") return "That email does not look valid.";
+    if (code === "auth/user-not-found" || code === "auth/invalid-credential" || code === "auth/wrong-password")
+      return "That email or password does not match.";
+    if (code === "auth/email-already-in-use") return "That email already has an account. Sign in instead.";
+    if (code === "auth/weak-password") return "Use a password with at least 6 characters.";
+    if (code === "auth/too-many-requests") return "Too many tries. Wait a minute and try again.";
+    return (err && err.message) || "Could not complete that.";
   }
 
-  function signOut() {
-    session = null;
-    localStorage.removeItem(LS_SESSION);
-    sessionStorage.removeItem(LS_UNLOCK);
-    renderSession();
+  async function ensureAnonymous() {
+    if (!auth) return;
+    if (auth.currentUser) return;
+    await auth.signInAnonymously();
+  }
+
+  async function signIn() {
+    const email = $("loginEmail").value.trim();
+    const password = $("loginPass").value;
+    if (!email || !password) {
+      $("loginStatus").textContent = "Email and password are required.";
+      return;
+    }
+    if (!auth) {
+      $("loginStatus").textContent = "Firebase Auth is not connected yet.";
+      return;
+    }
+    $("submitLogin").disabled = true;
+    try {
+      await auth.signInWithEmailAndPassword(email, password);
+      $("loginPass").value = "";
+      $("loginStatus").textContent = "";
+      closeOverlay("loginOverlay");
+      toast("Signed in");
+    } catch (err) {
+      $("loginStatus").textContent = authError(err);
+    } finally {
+      $("submitLogin").disabled = false;
+    }
+  }
+
+  async function createAccount() {
+    const email = $("loginEmail").value.trim();
+    const password = $("loginPass").value;
+    if (!email || password.length < 6) {
+      $("loginStatus").textContent = "Use your email and a password of at least 6 characters.";
+      return;
+    }
+    if (!auth) {
+      $("loginStatus").textContent = "Firebase Auth is not connected yet.";
+      return;
+    }
+    try {
+      const cred = await auth.createUserWithEmailAndPassword(email, password);
+      if (cred.user) await cred.user.sendEmailVerification();
+      $("loginStatus").textContent =
+        "Account created. Check your email to verify, then sign in. Teachers also need the owner to approve their email.";
+      toast("Check your email");
+    } catch (err) {
+      $("loginStatus").textContent = authError(err);
+    }
+  }
+
+  async function resetPassword() {
+    const email = $("loginEmail").value.trim();
+    if (!email) {
+      $("loginStatus").textContent = "Enter your email first, then tap Reset password.";
+      return;
+    }
+    if (!auth) {
+      $("loginStatus").textContent = "Firebase Auth is not connected yet.";
+      return;
+    }
+    try {
+      await auth.sendPasswordResetEmail(email);
+      $("loginStatus").textContent = "Password reset email sent.";
+    } catch (err) {
+      $("loginStatus").textContent = authError(err);
+    }
+  }
+
+  async function signOut() {
+    if (!auth) return;
+    await auth.signOut();
+    try {
+      await auth.signInAnonymously();
+    } catch (err) {
+      console.warn(err);
+    }
     toast("Signed out");
   }
 
-  async function saveUsers(next) {
-    users = next;
-    if (live) await db.collection("meta").doc("users").set({ list: next });
-    else localStorage.setItem(LS_USERS, JSON.stringify(next));
-    renderPeople();
-  }
-
   async function addPerson() {
+    if (!isOwner()) {
+      $("peopleStatus").textContent = "Only the owner can approve editors.";
+      return;
+    }
     const name = $("pName").value.trim();
-    const username = $("pUser").value.trim();
-    const password = $("pPass").value.trim();
-    const role = $("pRole").value;
-    if (name.length < 2 || username.length < 2 || password.length < 3) {
-      $("peopleStatus").textContent = "Name, username, and a short password are required.";
+    const email = $("pEmail").value.trim().toLowerCase();
+    if (name.length < 2 || !email.includes("@")) {
+      $("peopleStatus").textContent = "Display name and a valid email are required.";
       return;
     }
-    const existing = allUsers();
-    if (existing.some((u) => String(u.username).toLowerCase() === username.toLowerCase())) {
-      $("peopleStatus").textContent = "That username is already used.";
+    if (email === OWNER_EMAIL) {
+      $("peopleStatus").textContent = "The owner is already an editor.";
       return;
     }
-    const extras = (users && users.length ? users : []).concat([{ name, username, password, role }]);
     try {
-      await saveUsers(extras);
+      await db.collection("editors").doc(email).set({
+        email,
+        name,
+        addedAt: new Date().toISOString(),
+      });
       $("pName").value = "";
-      $("pUser").value = "";
-      $("pPass").value = "";
-      $("peopleStatus").textContent = "Added. Give them the username and password.";
-      toast("Person added");
+      $("pEmail").value = "";
+      $("peopleStatus").textContent = "Approved. They create their own account with that email, then sign in.";
+      toast("Editor approved");
     } catch (err) {
       $("peopleStatus").textContent = err.message;
     }
   }
 
-  async function removePerson(username) {
-    if (!username) return;
-    if (!confirm("Remove " + username + "?")) return;
-    const extras = (users || []).filter((u) => String(u.username).toLowerCase() !== String(username).toLowerCase());
-    await saveUsers(extras);
+  async function removePerson(email) {
+    if (!email || !isOwner()) return;
+    if (!confirm("Remove editor " + email + "?")) return;
+    await db.collection("editors").doc(email).delete();
   }
 
   async function addThought() {
-    const s = currentSession();
-    const author = (s && (s.name || s.username)) || $("author").value.trim();
+    const author = (displayName() || $("author").value.trim());
     const text = $("thoughtText").value.trim();
     $("shareStatus").textContent = "";
     if (author.length < 2) {
@@ -490,15 +552,17 @@
     }
     const thought = {
       author,
-      role: (s && s.role) || "student",
-      username: (s && s.username) || "",
+      role: currentRole(),
+      username: authEmail(),
       text,
       createdAt: new Date().toISOString(),
     };
     $("submitShare").disabled = true;
     try {
-      if (live) await db.collection("thoughts").add(thought);
-      else {
+      if (live) {
+        await ensureAnonymous();
+        await db.collection("thoughts").add(thought);
+      } else {
         thought.id = "local-" + Date.now();
         thoughts = [...readLocal(LS_THOUGHTS, []), thought];
         localStorage.setItem(LS_THOUGHTS, JSON.stringify(thoughts));
@@ -517,6 +581,10 @@
 
   async function removeThought(id) {
     if (!id) return;
+    if (!canPrepareLesson()) {
+      toast("Only approved editors can remove thoughts.");
+      return;
+    }
     if (!confirm("Remove this thought from the class board?")) return;
     try {
       if (live) await db.collection("thoughts").doc(id).delete();
@@ -556,10 +624,33 @@
     }
   }
 
+  function openAdminIfAllowed() {
+    if (!canPrepareLesson()) return false;
+    openOverlay("adminOverlay");
+    paintQr();
+    renderSession();
+    return true;
+  }
+
   function startFirebase() {
     firebase.initializeApp(cfg.firebase);
     db = firebase.firestore();
+    auth = firebase.auth();
     live = true;
+
+    let lastEditorUid = null;
+    auth.onAuthStateChanged(async (user) => {
+      authUser = user;
+      renderSession();
+      if (user && !user.isAnonymous && canPrepareLesson() && user.uid !== lastEditorUid) {
+        lastEditorUid = user.uid;
+        openAdminIfAllowed();
+      }
+      if (!user || user.isAnonymous) lastEditorUid = null;
+    });
+
+    ensureAnonymous().catch((err) => console.warn(err));
+
     db.collection("meta")
       .doc("topic")
       .onSnapshot((snap) => {
@@ -572,12 +663,18 @@
         cover = snap.exists ? snap.data() : cfg.starterCover;
         renderCover();
       });
-    db.collection("meta")
-      .doc("users")
-      .onSnapshot((snap) => {
-        users = snap.exists && Array.isArray(snap.data().list) ? snap.data().list : [];
+    db.collection("editors").onSnapshot(
+      (snap) => {
+        editors = snap.docs.map((d) => ({ id: d.id, ...d.data(), email: String(d.id).toLowerCase() }));
         renderPeople();
-      });
+        renderSession();
+      },
+      () => {
+        editors = [];
+        renderPeople();
+        renderSession();
+      }
+    );
     db.collection("thoughts")
       .orderBy("createdAt")
       .onSnapshot(
@@ -598,7 +695,7 @@
     topic = readLocal(LS_TOPIC, null) || cfg.starterTopic;
     cover = readLocal(LS_COVER, null) || cfg.starterCover;
     thoughts = readLocal(LS_THOUGHTS, []);
-    users = readLocal(LS_USERS, []);
+    editors = [];
     renderTopic();
     renderCover();
     renderThoughts();
@@ -617,11 +714,13 @@
       } else setView("lesson");
     });
     $("openLogin").addEventListener("click", () => {
-      if (currentSession()) signOut();
+      if (authUser && !isAnonymous()) signOut();
       else openOverlay("loginOverlay");
     });
     $("cancelLogin").addEventListener("click", () => closeOverlay("loginOverlay"));
     $("submitLogin").addEventListener("click", signIn);
+    $("createAccount").addEventListener("click", createAccount);
+    $("resetPassword").addEventListener("click", resetPassword);
     $("addPerson").addEventListener("click", addPerson);
     $("peopleList").addEventListener("click", (e) => {
       const un = e.target && e.target.getAttribute("data-un");
@@ -631,24 +730,7 @@
     $("submitShare").addEventListener("click", addThought);
 
     $("openTeacher").addEventListener("click", () => {
-      if (canPrepareLesson()) {
-        openOverlay("adminOverlay");
-        paintQr();
-        renderSession();
-      } else openOverlay("loginOverlay");
-    });
-    $("cancelPin").addEventListener("click", () => closeOverlay("pinOverlay"));
-    $("submitPin").addEventListener("click", () => {
-      if ($("pinInput").value === String(cfg.adminPin || "")) {
-        sessionStorage.setItem(LS_UNLOCK, "1");
-        $("pinStatus").textContent = "";
-        $("pinInput").value = "";
-        closeOverlay("pinOverlay");
-        openOverlay("adminOverlay");
-        paintQr();
-      } else {
-        $("pinStatus").textContent = "That PIN is not right.";
-      }
+      if (!openAdminIfAllowed()) openOverlay("loginOverlay");
     });
     $("closeAdmin").addEventListener("click", () => closeOverlay("adminOverlay"));
     $("closeAdmin2").addEventListener("click", () => closeOverlay("adminOverlay"));
@@ -683,7 +765,7 @@
       if (id) removeThought(id);
     });
 
-    ["shareOverlay", "pinOverlay", "adminOverlay", "loginOverlay"].forEach((id) => {
+    ["shareOverlay", "adminOverlay", "loginOverlay"].forEach((id) => {
       $(id).addEventListener("click", (e) => {
         if (e.target.id === id) closeOverlay(id);
       });
@@ -692,6 +774,9 @@
     window.addEventListener("hashchange", () => {
       setView(location.hash === "#lesson" ? "lesson" : "cover");
     });
+
+    const savedAuthor = localStorage.getItem("sc_author");
+    if (savedAuthor) $("author").value = savedAuthor;
   }
 
   wire();

@@ -1,20 +1,13 @@
 /* ============================================================
-   SUNDAY CIRCLE — edit names and starter passwords here
+   SUNDAY CIRCLE — public site config (no passwords)
    ============================================================ */
 
 window.SUNDAY_CIRCLE = {
   className: "Sunday Circle",
   tagline: "Elders Quorum notes, the conference talk, then this week’s lesson.",
 
-  // Fallback if you have not created people yet
-  adminPin: "337144",
-
-  // Starter accounts. Change these. Secretary can also add people in Admin.
-  // Roles: secretary | teacher | student
-  users: [
-    { username: "secretary", password: "Tapehi60", role: "secretary", name: "EQ secretary" },
-    { username: "teacher", password: "Jeqobe27", role: "teacher", name: "EQ teacher" },
-  ],
+  // Firebase Auth owner. This email may publish and manage editors.
+  ownerEmail: "windmills34@gmail.com",
 
   starterCover: {
     weekLabel: "September 7–13, 2026",
