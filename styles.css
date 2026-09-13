@@ -161,9 +161,10 @@ header.app-header {
 
 .event-list li, .bday-list li {
   display: grid;
-  grid-template-columns: minmax(92px, 34%) 1fr;
-  gap: 10px;
-  padding: 8px 0;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 10px 0;
   border-top: 1px solid #efe8dc;
   font-size: 0.95rem;
 }
@@ -174,6 +175,27 @@ header.app-header {
   color: var(--gold-deep);
   font-weight: 650;
   font-size: 0.82rem;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+}
+
+.what {
+  color: var(--ink);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.col-heads {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  gap: 12px;
+  margin-bottom: 4px;
+  padding: 0 0 4px;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
 }
 
 .need-list li {

@@ -48,7 +48,8 @@
       </article>
 
       <section class="bulletin-block">
-        <h3>Happening in the ward</h3>
+        <h3>Happening this week</h3>
+        <div class="col-heads"><span>Date</span><span>What’s going on</span></div>
         <ul class="event-list" id="happenings"></ul>
       </section>
 
@@ -59,6 +60,7 @@
 
       <section class="bulletin-block">
         <h3>Birthdays &amp; dates</h3>
+        <div class="col-heads"><span>Date</span><span>Name</span></div>
         <ul class="bday-list" id="birthdays"></ul>
       </section>
 
@@ -153,12 +155,12 @@
         <input id="cGreeting" placeholder="Welcome to the family" />
         <label for="cWelcome">Welcome note</label>
         <textarea id="cWelcome" placeholder="A short greeting for the cover"></textarea>
-        <label for="cHappenings">Happening in the ward (one per line: time | event)</label>
-        <textarea id="cHappenings" placeholder="Sun 9:00 a.m. | Sacrament meeting"></textarea>
+        <label for="cHappenings">Happening this week (one per line: date | what’s going on)</label>
+        <textarea id="cHappenings" placeholder="Sun 7th | Linger longer after class"></textarea>
         <label for="cNeeds">Family needs (one per line)</label>
         <textarea id="cNeeds" placeholder="Meals for a family this week"></textarea>
-        <label for="cBirthdays">Birthdays &amp; dates (one per line: when | name)</label>
-        <textarea id="cBirthdays" placeholder="Mon 14 | Claire"></textarea>
+        <label for="cBirthdays">Birthdays &amp; dates (one per line: date | first last)</label>
+        <textarea id="cBirthdays" placeholder="Wed 10 | Dennis Rogers"></textarea>
         <label for="cThanks">Thanks</label>
         <textarea id="cThanks" placeholder="Thank you to…"></textarea>
         <div class="row-actions">

@@ -63,8 +63,15 @@
       .map((line) => line.trim())
       .filter(Boolean)
       .map((line) => {
-        const parts = line.split("|").map((s) => s.trim());
-        if (parts.length >= 2) return { when: parts[0], what: parts.slice(1).join(" | "), who: parts.slice(1).join(" | ") };
+        const parts = line.split("|").map((s) => s.trim()).filter(Boolean);
+        if (parts.length >= 2) {
+          const when = parts[0];
+          const rest = parts.slice(1).join(" ").replace(/\s+/g, " ").trim();
+          return { when, what: rest, who: rest };
+        }
+        // "Wed 10 Dennis Rogers" → date left, full name right
+        const m = line.match(/^((?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b[^\s]*(?:\s+\d{1,2}(?:st|nd|rd|th)?)?)\s+(.+)$/i);
+        if (m) return { when: m[1].trim(), what: m[2].trim(), who: m[2].trim() };
         return { when: "", what: line, who: line };
       });
   }
@@ -165,10 +172,11 @@
     const happenings = c.happenings || [];
     $("happenings").innerHTML = happenings.length
       ? happenings
-          .map(
-            (ev) =>
-              `<li><span class="when">${escapeHtml(ev.when || "")}</span><span>${escapeHtml(ev.what || ev.who || "")}</span></li>`
-          )
+          .map((ev) => {
+            const when = ev.when || "";
+            const what = ev.what || ev.who || "";
+            return `<li><span class="when">${escapeHtml(when)}</span><span class="what">${escapeHtml(what)}</span></li>`;
+          })
           .join("")
       : '<li class="empty-line">Nothing posted yet.</li>';
     const needs = c.needs || [];
@@ -178,10 +186,11 @@
     const bdays = c.birthdays || [];
     $("birthdays").innerHTML = bdays.length
       ? bdays
-          .map(
-            (b) =>
-              `<li><span class="when">${escapeHtml(b.when || "")}</span><span>${escapeHtml(b.who || b.what || "")}</span></li>`
-          )
+          .map((b) => {
+            const when = b.when || "";
+            const who = String(b.who || b.what || "").trim();
+            return `<li><span class="when">${escapeHtml(when)}</span><span class="what">${escapeHtml(who)}</span></li>`;
+          })
           .join("")
       : '<li class="empty-line">No dates posted.</li>';
     $("thanks").innerHTML = paragraphs(c.thanks || "");
