@@ -117,6 +117,13 @@
     return (match && match.name) || authUser.displayName || authEmail();
   }
 
+
+  function videoEmbedHint(url) {
+    const info = embedInfo(url);
+    if (!url) return "";
+    if (info && info.type === "iframe") return "In-page player will embed this video.";
+    return "This URL will not play in the black box — use the official General Conference YouTube link so brothers see the talk on the page.";
+  }
   function embedInfo(url) {
     if (!url) return null;
     const raw = String(url).trim();
@@ -252,20 +259,24 @@
     if (video && video.type === "iframe") {
       block.hidden = false;
       fallback.hidden = true;
+      frame.hidden = false;
       frame.innerHTML =
         '<iframe src="' +
         escapeHtml(video.src) +
         '" title="Talk video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
     } else if (video) {
       block.hidden = false;
+      frame.hidden = true;
       frame.innerHTML = "";
       fallback.hidden = false;
       fallback.innerHTML =
+        '<p class="hint" style="margin:0 0 10px">In-page player needs a YouTube or Vimeo link. Open the talk below, or republish with the conference YouTube URL.</p>' +
         '<a class="btn primary" style="display:inline-block;text-decoration:none" href="' +
         escapeHtml(video.src) +
         '" target="_blank" rel="noopener">Open the talk</a>';
     } else {
       block.hidden = true;
+      frame.hidden = true;
       frame.innerHTML = "";
     }
     document.title = cfg.className || "Sunday Circle";
@@ -389,6 +400,14 @@
     if (!next.title) {
       $("topicStatus").textContent = "Add a title before publishing.";
       return;
+    }
+    if (next.videoUrl) {
+      const embed = embedInfo(next.videoUrl);
+      if (!embed || embed.type !== "iframe") {
+        $("topicStatus").textContent =
+          "Talk video link must be a YouTube or Vimeo URL so the talk plays on the page (not a study.gospel/library link).";
+        return;
+      }
     }
     $("publishTopic").disabled = true;
     try {
@@ -740,6 +759,16 @@
     $("tagline").textContent = cfg.tagline || "";
     $("navCover").addEventListener("click", () => setView("cover"));
     $("navLesson").addEventListener("click", () => setView("lesson"));
+    const syncVideoHint = () => {
+      const el = $("fVideoHint");
+      if (!el) return;
+      el.textContent = videoEmbedHint($("fVideo").value.trim());
+    };
+    if ($("fVideo")) {
+      $("fVideo").addEventListener("input", syncVideoHint);
+      $("fVideo").addEventListener("change", syncVideoHint);
+      syncVideoHint();
+    }
     $("primaryCta").addEventListener("click", () => {
       if ($("primaryCta").dataset.action === "share") {
         openOverlay("shareOverlay");
