@@ -562,8 +562,12 @@
     return (err && err.message) || "Could not complete that.";
   }
 
+  let authReadyResolve;
+  const authReady = new Promise((r) => (authReadyResolve = r));
+
   async function ensureAnonymous() {
     if (!auth) return;
+    await authReady;
     if (auth.currentUser) return;
     await auth.signInAnonymously();
   }
@@ -780,18 +784,18 @@
     auth = firebase.auth();
     live = true;
 
-    let lastEditorUid = null;
-    auth.onAuthStateChanged(async (user) => {
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch((err) => console.warn(err));
+    let firstAuth = true;
+    auth.onAuthStateChanged((user) => {
       authUser = user;
       renderSession();
-      if (user && !user.isAnonymous && canPrepareLesson() && user.uid !== lastEditorUid) {
-        lastEditorUid = user.uid;
-        openAdminIfAllowed();
+      if (firstAuth) {
+        firstAuth = false;
+        authReadyResolve();
+        // Only fall back to anonymous once the persisted session (if any) has been restored.
+        if (!user) ensureAnonymous().catch((err) => console.warn(err));
       }
-      if (!user || user.isAnonymous) lastEditorUid = null;
     });
-
-    ensureAnonymous().catch((err) => console.warn(err));
 
     db.collection("meta")
       .doc("topic")
