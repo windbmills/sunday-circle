@@ -62,6 +62,10 @@
       <section class="bulletin-block">
         <h3>Family needs</h3>
         <ul class="need-list" id="needs"></ul>
+        <ul class="need-list" id="needItems"></ul>
+        <div class="row-actions" style="justify-content:flex-start">
+          <button class="btn ghost" type="button" id="openNeed">Add a need</button>
+        </div>
       </section>
 
       <section class="bulletin-block">
@@ -122,6 +126,22 @@
     </div>
   </div>
 
+  <div class="overlay" id="needOverlay">
+    <div class="sheet" role="dialog">
+      <h3>Add a family need</h3>
+      <p class="hint">Only post what is okay to share publicly. Private needs should go straight to the presidency. Needs stay on the board until an editor removes them.</p>
+      <label for="needText">The need</label>
+      <textarea id="needText" maxlength="500" placeholder="Service project Sat 9 AM at the Smith home — yard cleanup"></textarea>
+      <label for="needContact">Your name / contact (optional)</label>
+      <input id="needContact" maxlength="80" placeholder="Name, phone, or email" />
+      <div class="row-actions">
+        <button class="btn ghost" type="button" id="cancelNeed">Cancel</button>
+        <button class="btn primary" type="button" id="submitNeed">Post</button>
+      </div>
+      <div class="status" id="needStatus"></div>
+    </div>
+  </div>
+
   <div class="overlay" id="loginOverlay">
     <div class="sheet" role="dialog">
       <h3>Editor sign in</h3>
@@ -152,6 +172,7 @@
         <button type="button" data-tab="people">Editors</button>
         <button type="button" data-tab="qr">QR &amp; link</button>
         <button type="button" data-tab="mod">Thoughts</button>
+        <button type="button" data-tab="needs">Needs</button>
       </div>
 
       <div class="panel on" id="panel-cover">
@@ -165,7 +186,7 @@
         <textarea id="cHappenings" placeholder="Sun 7th | Linger longer after class"></textarea>
         <label for="cInterviews">Ministering interviews this Sunday (one per line: brother | district leader)</label>
         <textarea id="cInterviews" placeholder="Jason Lancaster | Robert"></textarea>
-        <label for="cNeeds">Family needs (one per line)</label>
+        <label for="cNeeds">Family needs guidance line (one per line; posted needs are kept separately)</label>
         <textarea id="cNeeds" placeholder="Meals for a family this week"></textarea>
         <label for="cBirthdays">Birthdays &amp; dates (one per line: date | first last)</label>
         <textarea id="cBirthdays" placeholder="Wed 10 | Dennis Rogers"></textarea>
@@ -235,6 +256,11 @@
       <div class="panel" id="panel-mod">
         <p class="hint">Remove a thought if it does not belong in class.</p>
         <div id="modList"></div>
+      </div>
+
+      <div class="panel" id="panel-needs">
+        <p class="hint">Family needs stay on the bulletin until removed here. Publishing the Cover does not touch them.</p>
+        <div id="needModList"></div>
       </div>
     </div>
   </div>

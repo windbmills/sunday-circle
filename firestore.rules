@@ -50,5 +50,19 @@ service cloud.firestore {
       allow delete: if isEditor();
       allow update: if false;
     }
+
+    match /needs/{id} {
+      allow read: if true;
+      allow create: if signedIn()
+                    && request.resource.data.keys().hasOnly(['text', 'contact', 'createdAt'])
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() >= 1
+                    && request.resource.data.text.size() <= 500
+                    && (!('contact' in request.resource.data)
+                        || (request.resource.data.contact is string
+                            && request.resource.data.contact.size() <= 80))
+                    && request.resource.data.createdAt is string;
+      allow update, delete: if isEditor();
+    }
   }
 }

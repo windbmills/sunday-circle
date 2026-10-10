@@ -13,6 +13,8 @@
   let topic = null;
   let cover = null;
   let thoughts = [];
+  let needItems = [];
+  const LS_NEEDS = "sc_needs";
   let editors = [];
   let authUser = null;
   let view = "cover";
@@ -200,7 +202,8 @@
     const needs = c.needs || [];
     $("needs").innerHTML = needs.length
       ? needs.map((n) => `<li>${escapeHtml(typeof n === "string" ? n : n.what || "")}</li>`).join("")
-      : '<li class="empty-line">No needs listed this week.</li>';
+      : "";
+    renderNeeds();
     const bdays = c.birthdays || [];
     $("birthdays").innerHTML = bdays.length
       ? bdays
@@ -324,6 +327,93 @@
     }
   }
 
+  function renderNeeds() {
+    const el = $("needItems");
+    if (!el) return;
+    const sorted = [...needItems].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const ed = canPrepareLesson();
+    el.innerHTML = sorted.length
+      ? sorted
+          .map(
+            (n) => `<li>${escapeHtml(n.text || "")}${n.contact ? ` <em style="color:var(--ink-soft)">— ${escapeHtml(n.contact)}</em>` : ""}${
+              ed ? ` <button class="btn danger" type="button" data-delneed="${escapeHtml(n.id)}" style="padding:2px 8px;font-size:.75rem">Remove</button>` : ""
+            }</li>`
+          )
+          .join("")
+      : '<li class="empty-line">No needs posted right now.</li>';
+    const mod = $("needModList");
+    if (mod) {
+      mod.innerHTML = sorted.length
+        ? sorted
+            .map(
+              (n) => `
+        <div class="mod-item">
+          <strong>${escapeHtml(n.contact || "Anonymous")}</strong>
+          <span style="color:var(--ink-soft);font-size:.8rem"> · ${escapeHtml(formatWhen(n.createdAt))}</span>
+          <p>${escapeHtml(n.text || "")}</p>
+          <button class="btn danger" type="button" data-delneed="${escapeHtml(n.id)}">Remove</button>
+        </div>`
+            )
+            .join("")
+        : '<p class="hint">No needs posted.</p>';
+    }
+  }
+
+  async function submitNeed() {
+    const text = $("needText").value.trim();
+    const contact = $("needContact").value.trim();
+    $("needStatus").textContent = "";
+    if (text.length < 1 || text.length > 500) {
+      $("needStatus").textContent = "Please describe the need (up to 500 characters).";
+      return;
+    }
+    if (contact.length > 80) {
+      $("needStatus").textContent = "Name / contact must be 80 characters or less.";
+      return;
+    }
+    const need = { text, contact, createdAt: new Date().toISOString() };
+    $("submitNeed").disabled = true;
+    try {
+      if (live) {
+        await ensureAnonymous();
+        await db.collection("needs").add(need);
+      } else {
+        need.id = "local-" + Date.now();
+        needItems = [...readLocal(LS_NEEDS, []), need];
+        localStorage.setItem(LS_NEEDS, JSON.stringify(needItems));
+        renderNeeds();
+      }
+      $("needText").value = "";
+      $("needContact").value = "";
+      closeOverlay("needOverlay");
+      toast("Need posted");
+    } catch (err) {
+      $("needStatus").textContent = "Could not post: " + err.message;
+    } finally {
+      $("submitNeed").disabled = false;
+    }
+  }
+
+  async function removeNeed(id) {
+    if (!id) return;
+    if (!canPrepareLesson()) {
+      toast("Only approved editors can remove needs.");
+      return;
+    }
+    if (!confirm("Remove this need from the board?")) return;
+    try {
+      if (live) await db.collection("needs").doc(id).delete();
+      else {
+        needItems = readLocal(LS_NEEDS, []).filter((n) => n.id !== id);
+        localStorage.setItem(LS_NEEDS, JSON.stringify(needItems));
+        renderNeeds();
+      }
+      toast("Removed");
+    } catch (err) {
+      toast(err.message);
+    }
+  }
+
   function readLocal(key, fallback) {
     try {
       const v = JSON.parse(localStorage.getItem(key) || "null");
@@ -442,6 +532,7 @@
     document.querySelectorAll('.admin-tabs button[data-tab="people"]').forEach((el) => {
       el.style.display = isOwner() ? "" : "none";
     });
+    renderNeeds();
   }
 
   function renderPeople() {
@@ -726,6 +817,7 @@
         renderSession();
       }
     );
+    subscribeNeeds();
     db.collection("thoughts")
       .orderBy("createdAt")
       .onSnapshot(
@@ -742,10 +834,21 @@
       );
   }
 
+  function subscribeNeeds() {
+    db.collection("needs").onSnapshot(
+      (snap) => {
+        needItems = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        renderNeeds();
+      },
+      (err) => console.warn("needs", err)
+    );
+  }
+
   function startLocal() {
     topic = readLocal(LS_TOPIC, null) || cfg.starterTopic;
     cover = readLocal(LS_COVER, null) || cfg.starterCover;
     thoughts = readLocal(LS_THOUGHTS, []);
+    needItems = readLocal(LS_NEEDS, []);
     editors = [];
     renderTopic();
     renderCover();
@@ -821,12 +924,22 @@
       });
     });
 
+    $("openNeed").addEventListener("click", () => openOverlay("needOverlay"));
+    $("cancelNeed").addEventListener("click", () => closeOverlay("needOverlay"));
+    $("submitNeed").addEventListener("click", submitNeed);
+    ["needItems", "needModList"].forEach((lid) =>
+      $(lid).addEventListener("click", (e) => {
+        const id = e.target && e.target.getAttribute("data-delneed");
+        if (id) removeNeed(id);
+      })
+    );
+
     $("modList").addEventListener("click", (e) => {
       const id = e.target && e.target.getAttribute("data-del");
       if (id) removeThought(id);
     });
 
-    ["shareOverlay", "adminOverlay", "loginOverlay"].forEach((id) => {
+    ["shareOverlay", "adminOverlay", "loginOverlay", "needOverlay"].forEach((id) => {
       $(id).addEventListener("click", (e) => {
         if (e.target.id === id) closeOverlay(id);
       });
